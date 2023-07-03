@@ -257,16 +257,10 @@ def main(win, width):
 	pygame.quit()
 
 main(WIN, WIDTH)
-print(PATH)
-
 BARRIER = []
 [BARRIER.append(x) for x in BARRIERpos if x not in BARRIER]
-print(BARRIER)
-print("GOAL: ", GOAL)
-
 
 # start of pybullet stuff
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 print("current_dir=" + currentdir)
 parentdir = os.path.join(currentdir, "../gym")
@@ -359,7 +353,6 @@ def moveTo(targetX, targetY):
 
 
 PATH.reverse()
-print("PATH: ", PATH)
 for coordinate in PATH:
    moveTo(coordinate[0], coordinate[1])
 
