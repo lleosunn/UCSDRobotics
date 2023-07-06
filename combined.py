@@ -92,6 +92,19 @@ class Spot:
 
 		if self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): # LEFT
 			self.neighbors.append(grid[self.row][self.col - 1])
+		
+		# diagonals but weird
+		# if (self.row < self.total_rows - 1) and (not grid[self.row + 1][self.col].is_barrier()) and (self.col > 0) and (not grid[self.row][self.col - 1].is_barrier()): # DOWN LEFT
+		# 	self.neighbors.append(grid[self.row + 1][self.col - 1])
+
+		# if self.row < self.total_rows - 1 and not grid[self.row + 1][self.col].is_barrier() and self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): # DOWN RIGHT
+		# 	self.neighbors.append(grid[self.row + 1][self.col + 1])
+
+		# if self.row > 0 and not grid[self.row - 1][self.col].is_barrier() and self.col > 0 and not grid[self.row][self.col - 1].is_barrier(): # UP LEFT
+		# 	self.neighbors.append(grid[self.row - 1][self.col - 1])
+
+		# if self.row > 0 and not grid[self.row - 1][self.col].is_barrier() and self.col < self.total_rows - 1 and not grid[self.row][self.col + 1].is_barrier(): # UP RIGHT
+		# 	self.neighbors.append(grid[self.row - 1][self.col + 1])
 
 	def __lt__(self, other):
 		return False
@@ -101,6 +114,7 @@ def h(p1, p2): #manhattan distance: heuristic function
 	x1, y1 = p1
 	x2, y2 = p2
 	return abs(x1 - x2) + abs(y1 - y2)
+	# return math.sqrt((x1-x2)**2 + (y1-y2)**2)
 
 
 def reconstruct_path(came_from, current, draw): # draw path IMPORTANT BECAUSE ROBOT NEED TO FOLLOW THIS
@@ -258,7 +272,7 @@ def main(win, width):
 
 main(WIN, WIDTH)
 BARRIER = []
-[BARRIER.append(x) for x in BARRIERpos if x not in BARRIER]
+[BARRIER.append(x) for x in BARRIERpos if x not in BARRIER] # gets rid of repetitve terms
 
 # start of pybullet stuff
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))

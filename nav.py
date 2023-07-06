@@ -72,7 +72,12 @@ def moveTo(targetX, targetY):
     # targetVelocity = p.readUserDebugParameter(targetVelocitySlider)
     targetVelocity = 5*distance
     #steeringAngle = p.readUserDebugParameter(steeringSlider)
+
+
+    
     steeringAngle = theta - h[2]
+
+
     # FIXED ANGLE ISSUE
     if steeringAngle > (math.pi / 2) or steeringAngle < -(math.pi / 2):
        steeringAngle = h[2] - theta
@@ -97,7 +102,7 @@ def moveTo(targetX, targetY):
     # print(h[2] / math.pi, theta / math.pi)
     print(steeringAngle)
 
-points = [(5, 0), (5, 5), (0, 5), (0, 0)]
+points = [(-10, 0)]
 
 for i in points:
    moveTo(i[0], i[1])
