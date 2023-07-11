@@ -67,6 +67,23 @@ def moveTo(targetX, targetY):
        steeringAngle = h[2] - theta
     else:
        steeringAngle = theta - h[2]
+
+
+    p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
+    camData = p.getDebugVisualizerCamera()
+    viewMat = camData[2]
+    projMat = camData[3]
+    p.getCameraImage(256, 256, viewMatrix=viewMat, projectionMatrix=projMat, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+    p.resetDebugVisualizerCamera(
+      cameraDistance = 0.1,
+      cameraYaw = math.degrees(h[2]) - 90, 
+      cameraPitch = -20,
+      cameraTargetPosition = [pos[0] + math.cos(h[2]), pos[1] + math.sin(h[2]), pos[2] + 0.1],
+      physicsClientId=0
+    )
+
+
+
     for wheel in wheels:
         p.setJointMotorControl2(car,
                             wheel,
