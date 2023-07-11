@@ -67,7 +67,7 @@ while (True):
 
   maxForce = p.readUserDebugParameter(maxForceSlider)
   targetVelocity = p.readUserDebugParameter(targetVelocitySlider)
-  #targetVelocity = 4*distance
+  #targetVelocity = 4*distanc
   steeringAngle = p.readUserDebugParameter(steeringSlider)
   #steeringAngle = theta - h[2]
 
