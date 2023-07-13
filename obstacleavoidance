@@ -5,6 +5,7 @@ import math
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 # Create directory to store depth images
 os.makedirs("depth_images", exist_ok=True)
@@ -31,13 +32,18 @@ for wheel in inactive_wheels:
   p.setJointMotorControl2(car, wheel, p.VELOCITY_CONTROL, targetVelocity=0, force=0)
 steering = [4, 6]
 
-BARRIER = [[3, 5]]
-box_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.4, 0.4, 0.4])
+
+barrierx = [random.uniform(0, 20) for _ in range(25)]
+barriery = [random.uniform(-1.5, 1.5) for _ in range(25)]
+
+# BARRIER = [list(t) for t in zip(barrierx, barriery)]
+BARRIER = [[3, 0.5], [6, -0.5], [9, 0.3]]
+cylinder_shape = p.createCollisionShape(p.GEOM_CYLINDER, radius=0.2, height=1)
 
 for coordinate in BARRIER:
   box_body = p.createMultiBody(
     baseMass=1.0,
-    baseCollisionShapeIndex=box_shape,
+    baseCollisionShapeIndex=cylinder_shape,
     basePosition=[coordinate[0], coordinate[1], 1],
   )
 
@@ -61,8 +67,8 @@ def moveTo(targetX, targetY):
     targetVelocity = 5*distance
 
     # velocity cap
-    if targetVelocity > 20:
-       targetVelocity = 20
+    if targetVelocity > 15:
+       targetVelocity = 15
 
 
     steeringAngle = theta - h[2]
@@ -73,25 +79,54 @@ def moveTo(targetX, targetY):
 
 
 
+    view_matrix_car = p.computeViewMatrix(
+       cameraEyePosition = [pos[0] + 0.5*math.cos(h[2]), pos[1] + 0.5*math.sin(h[2]), pos[2] + 0.3],
+       cameraTargetPosition = [pos[0] + 2*math.cos(h[2]), pos[1] + 2*math.sin(h[2]), pos[2] + 0.1],
+       cameraUpVector = [0, 0, 1]
+    )
+    projection_matrix_car = p.computeProjectionMatrixFOV(
+      fov=100,  # field of view
+      aspect=1.0,  # aspect ratio
+      nearVal=0.1,  # near clipping plane
+      farVal=100.0  # far clipping plane
+    )
+
     p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)
     camData = p.getDebugVisualizerCamera()
     viewMat = camData[2]
     projMat = camData[3]
-    img_arr = p.getCameraImage(256, 256, viewMatrix=viewMat, projectionMatrix=projMat, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+
+    img_arr = p.getCameraImage(256, 256, viewMatrix=view_matrix_car, projectionMatrix=projection_matrix_car, renderer=p.ER_BULLET_HARDWARE_OPENGL)
     depth_buf = np.reshape(img_arr[3], (256, 256))
     depth_img = np.array(depth_buf)
     plt.imsave(f'depth_images/depth_img_{i}.png', depth_img)
     i += 1
 
-    print(depth_img[0])
+    
+    firsthalf = depth_img[0][:128]
+    totalfirsthalf = sum(firsthalf)
+    secondhalf = depth_img[0][128:]
+    totalsecondhalf = sum(secondhalf)
 
-    p.resetDebugVisualizerCamera(
-      cameraDistance = 0.1,
-      cameraYaw = math.degrees(h[2]) - 90, 
-      cameraPitch = -20,
-      cameraTargetPosition = [pos[0] + math.cos(h[2]), pos[1] + math.sin(h[2]), pos[2] + 0.1],
-      physicsClientId=0
-    )
+    print("FIRST: ", totalfirsthalf)
+    print("SECOND: ", totalsecondhalf)
+    difference = abs(totalfirsthalf - totalsecondhalf)
+    if difference > 1:  
+      if totalfirsthalf < totalsecondhalf:
+         steeringAngle = steeringAngle - 8*(1/difference)
+      else:
+         steeringAngle = steeringAngle + 8*(1/difference)
+
+
+    # p.resetDebugVisualizerCamera(
+    #   cameraDistance = 0.1,
+    #   cameraYaw = math.degrees(h[2]) - 90, 
+    #   cameraPitch = -20,
+    #   cameraTargetPosition = [pos[0] + math.cos(h[2]), pos[1] + math.sin(h[2]), pos[2] + 0.1],
+    #   physicsClientId=0
+    # )
+
+
     for wheel in wheels:
         p.setJointMotorControl2(car,
                             wheel,
@@ -102,10 +137,10 @@ def moveTo(targetX, targetY):
         p.setJointMotorControl2(car, steer, p.POSITION_CONTROL, targetPosition=steeringAngle)
     if (useRealTimeSim == 0):
         p.stepSimulation()
-    time.sleep(0.01)
+    time.sleep(0.001)
 
 # Waypoints
-points = [(10, 10)]
+points = [(20, 0)]
 
 for i in points:
    moveTo(i[0], i[1])
