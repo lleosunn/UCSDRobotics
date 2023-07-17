@@ -36,8 +36,8 @@ steering = [4, 6]
 barrierx = [random.uniform(0, 20) for _ in range(25)]
 barriery = [random.uniform(-1.5, 1.5) for _ in range(25)]
 
-# BARRIER = [list(t) for t in zip(barrierx, barriery)]
-BARRIER = [[3, 0.5], [6, -0.5], [9, 0.3]]
+BARRIER = [list(t) for t in zip(barrierx, barriery)]
+# BARRIER = [[3, 0], [6, -0.5], [9, 0.3]]
 cylinder_shape = p.createCollisionShape(p.GEOM_CYLINDER, radius=0.2, height=1)
 
 for coordinate in BARRIER:
@@ -85,7 +85,7 @@ def moveTo(targetX, targetY):
        cameraUpVector = [0, 0, 1]
     )
     projection_matrix_car = p.computeProjectionMatrixFOV(
-      fov=100,  # field of view
+      fov=60,  # field of view
       aspect=1.0,  # aspect ratio
       nearVal=0.1,  # near clipping plane
       farVal=100.0  # far clipping plane
@@ -108,14 +108,16 @@ def moveTo(targetX, targetY):
     secondhalf = depth_img[0][128:]
     totalsecondhalf = sum(secondhalf)
 
-    print("FIRST: ", totalfirsthalf)
-    print("SECOND: ", totalsecondhalf)
+    # print("FIRST: ", totalfirsthalf)
+    # print("SECOND: ", totalsecondhalf)
     difference = abs(totalfirsthalf - totalsecondhalf)
     if difference > 1:  
       if totalfirsthalf < totalsecondhalf:
          steeringAngle = steeringAngle - 8*(1/difference)
       else:
          steeringAngle = steeringAngle + 8*(1/difference)
+    print("Steering Angle: ", steeringAngle)
+    print("Difference: ", difference)
 
 
     # p.resetDebugVisualizerCamera(
