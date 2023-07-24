@@ -8,9 +8,38 @@ import matplotlib.pyplot as plt
 import random
 import open3d as o3d
 from PIL import Image, ImageOps
+import cv2
 
-fig, ax = plt.subplots()
-im = ax.imshow(np.zeros((256, 256)), cmap='gray', vmin=0, vmax=1)  # Display an empty image initially
+
+def depth_to_pcd(depth, fx, fy, cx, cy):
+    """
+    depth: depth image
+    fx, fy, cx, cy: camera intrinsics
+    """
+    # Convert to Open3D depth image
+    depth_o3d = o3d.geometry.Image((depth * 1000).astype(np.uint16))  # Open3D expects depth in mm
+
+    # Define camera intrinsics
+    intrinsic = o3d.camera.PinholeCameraIntrinsic(256, 256, fx, fy, cx, cy)
+
+    # Convert to point cloud
+    pcd = o3d.geometry.PointCloud.create_from_depth_image(depth_o3d, intrinsic)
+
+
+    # Create transformation matrix for mirroring around x-axis
+    transformation_matrix = np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+
+    # Transform point cloud
+    pcd.transform(transformation_matrix)
+    
+    return pcd
+
+
+if not os.path.exists('depth_images'):
+    os.makedirs('depth_images')
+
+if not os.path.exists('point_clouds'):
+    os.makedirs('point_clouds')
 
 # Simulation
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -47,8 +76,8 @@ def too_close(new_barrier, existing_barriers, min_distance=1.25):
 # List to hold generated barriers
 BARRIER = []
 
-while len(BARRIER) < 20:  # Create 25 barriers
-    new_barrier = [random.uniform(2, 18), random.uniform(-1, 1)]
+while len(BARRIER) < 45:  # Create 25 barriers
+    new_barrier = [random.uniform(2, 38), random.uniform(-1, 1)]
     if not too_close(new_barrier, BARRIER):
         BARRIER.append(new_barrier)
 
@@ -112,15 +141,20 @@ def moveTo(targetX, targetY):
     depth_img = 1 - np.array(depth_buf)
 
 
-    # displaying depth image
-    depth_pil = Image.fromarray((depth_img * 255).astype(np.uint8))
-    contrasted = ImageOps.autocontrast(depth_pil, cutoff=5)
-    depth_img_contrasted = np.array(contrasted) / 255.0
-    im.set_data(depth_img_contrasted)
-    im.set_clim(vmin=0, vmax=1)
-    fig.canvas.draw()
-    fig.canvas.flush_events()
-    plt.pause(0.01)
+
+    # Save depth image
+    img_filename = os.path.join('depth_images', f'depth_img_{i}.png')
+    cv2.imwrite(img_filename, (depth_img * 255).astype(np.uint8))
+
+    # Convert depth image to point cloud
+    # Assume camera intrinsics fx, fy, cx, cy
+    fx, fy, cx, cy = 128, 128, 128, 128  # Replace with your camera intrinsics
+    pcd = depth_to_pcd(depth_img, fx, fy, cx, cy)
+
+    # Save point cloud
+    pcd_filename = os.path.join('point_clouds', f'pcd_{i}.ply')
+    o3d.io.write_point_cloud(pcd_filename, pcd)
+
     i += 1
 
     
