@@ -1,9 +1,16 @@
 import pygame
 import math
 from queue import PriorityQueue
+import os, inspect
+import pybullet as p
+import pybullet_data
+import math
+import numpy as np
+import time
 
-WIDTH = 550
-ROWS = 55
+WIDTH = 750
+ROWS = 25
+scale = 1
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption("A* Path Finding Algorithm")
 
@@ -17,6 +24,12 @@ PURPLE = (128, 0, 128)
 ORANGE = (255, 165 ,0)
 GREY = (128, 128, 128)
 TURQUOISE = (64, 224, 208)
+
+PATH = []
+BARRIERpos = np.array([[5, 12], [6, 11], [8, 13]])
+BARRIERpos[:, 1] *= -1
+BARRIERpos[:, 1] += 24
+print(BARRIERpos)
 
 class Spot:
 	def __init__(self, row, col, width, total_rows):
@@ -39,14 +52,14 @@ class Spot:
 		return self.color == GREEN
 
 	def is_barrier(self):
-		return self.color == BLACK
+		return self.color == BLACK     
 
 	def is_inflation(self):
 		return self.color == GREY
-	
+
 	def is_barrierinflation(self):
 		return self.color == BLACK or self.color == GREY
-
+	
 	def is_start(self):
 		return self.color == ORANGE
 
@@ -67,7 +80,7 @@ class Spot:
 
 	def make_barrier(self):
 		self.color = BLACK
-
+		
 	def make_inflation(self):
 		self.color = GREY
 
@@ -128,19 +141,20 @@ def inflate_obstacles(grid, inflate_range=1):
                     not grid[inflated_row][inflated_col].is_barrier()):  # Make sure spot is in the grid and is not already an obstacle.
                     grid[inflated_row][inflated_col].make_inflation()  # Mark the spot as an obstacle
 
-def h(p1, p2): #manhattan vs euclidean distance: heuristic function
+def h(p1, p2): #manhattan vs eudclidean distance: heuristic function
 	x1, y1 = p1
 	x2, y2 = p2
 	# return abs(x1 - x2) + abs(y1 - y2)
 	return math.sqrt((x1-x2)**2 + (y1-y2)**2)
 
 
-def reconstruct_path(came_from, current, draw):
+def reconstruct_path(came_from, current, draw): # draw path IMPORTANT BECAUSE ROBOT NEED TO FOLLOW THIS
 	while current in came_from:
 		current = came_from[current]
 		current.make_path()
+		PATH.append([scale * (current.x / 30), scale * (-(current.y / 30) + 12)])
 		draw()
-	
+
 def reset_path(grid, start, end):
     for row in grid:
         for spot in row:
@@ -236,58 +250,163 @@ def get_clicked_pos(pos, rows, width): #gets mouse click position
 
 
 
+
 def main(win, width):
 	grid = make_grid(ROWS, width)
 	start = None
 	end = None
 	run = True
 
-	while run:
-		draw(win, grid, ROWS, width)
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				run = False
+	# while run:
+	draw(win, grid, ROWS, width)
+	start = grid[0][-13]
+	start.make_start()
+	end = grid[24][-13]
+	end.make_end()
+	
+	for coordinate in BARRIERpos:
+		grid[coordinate[0]][coordinate[1]].make_barrier()
+		
+	# for event in pygame.event.get():
+	# 	if event.type == pygame.QUIT:
+	# 		run = False
 
-			if pygame.mouse.get_pressed()[0]: # left click
-				pos = pygame.mouse.get_pos()
-				row, col = get_clicked_pos(pos, ROWS, width)
-				spot = grid[row][col]
-				if not start and spot != end:
-					start = spot
-					start.make_start()
+				# if pygame.mouse.get_pressed()[0]: # left click
+				# 	pos = pygame.mouse.get_pos()
+				# 	row, col = get_clicked_pos(pos, ROWS, width)
+				# 	spot = grid[row][col]
+					
+				# 	if not start and spot != end:
+				# 		start = spot
+				# 		start.make_start()
 
-				elif not end and spot != start:
-					end = spot
-					end.make_end()
+				# 	elif not end and spot != start:
+				# 		end = spot
+				# 		end.make_end()
+						
+				# 	elif spot != end and spot != start:
+				# 		spot.make_barrier()
+				# 		BARRIERpos.append([scale * (spot.x / 30), scale * ((-(spot.y) / 30) + 12)])
 
-				elif spot != end and spot != start:
-					spot.make_barrier()
-					print(spot.x / 50, -(spot.y / 50) + 10)
 
-			elif pygame.mouse.get_pressed()[2]: # RIGHT
-				pos = pygame.mouse.get_pos()
-				row, col = get_clicked_pos(pos, ROWS, width)
-				spot = grid[row][col]
-				spot.reset()
-				if spot == start:
-					start = None
-				elif spot == end:
-					end = None
+				# elif pygame.mouse.get_pressed()[2]: # RIGHT
+				# 	pos = pygame.mouse.get_pos()
+				# 	row, col = get_clicked_pos(pos, ROWS, width)
+				# 	spot = grid[row][col]
+				# 	spot.reset()
+				# 	if spot == start:
+				# 		start = None
+				# 	elif spot == end:
+				# 		end = None
 
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_c:
-					start = None
-					end = None
-					grid = make_grid(ROWS, width)
+				# if event.type == pygame.KEYDOWN:
+				# 	if event.key == pygame.K_c:
+				# 		start = None
+				# 		end = None
+				# 		grid = make_grid(ROWS, width)
 
-				if event.key == pygame.K_SPACE and start and end:
-					reset_path(grid, start, end)
-					inflate_obstacles(grid)  # Inflate obstacles before running the algorithm
-					for row in grid:
-						for spot in row:
-							spot.update_neighbors(grid)
-					algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+					# if event.key == pygame.K_SPACE and start and end:
+	reset_path(grid, start, end)
+	inflate_obstacles(grid)  # Inflate obstacles before running the algorithm
+	for row in grid:
+		for spot in row:
+			spot.update_neighbors(grid)
+	algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
+	# run = False
+
 
 	pygame.quit()
 
 main(WIN, WIDTH)
+# print(BARRIERpos)
+# BARRIER = []
+# [BARRIER.append(x) for x in BARRIERpos if x not in BARRIER] # gets rid of repetitve terms
+
+# Simulation
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.join(currentdir, "../gym")
+os.sys.path.insert(0, parentdir)
+cid = p.connect(p.SHARED_MEMORY)
+if (cid < 0):
+  p.connect(p.GUI)
+p.resetSimulation()
+p.setGravity(0, 0, -10)
+useRealTimeSim = 1
+
+p.setRealTimeSimulation(useRealTimeSim)
+p.loadURDF(os.path.join(pybullet_data.getDataPath(), "plane.urdf"), basePosition=[0, 0, 0])
+
+# Car
+car = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "racecar/racecar.urdf"))
+inactive_wheels = [5, 7]
+wheels = [2, 3]
+for wheel in inactive_wheels:
+  p.setJointMotorControl2(car, wheel, p.VELOCITY_CONTROL, targetVelocity=0, force=0)
+steering = [4, 6]
+
+# Obstacles
+cylinder_shape = p.createCollisionShape(p.GEOM_CYLINDER, radius=0.15, height=0.5)
+
+# Generate obstacles
+for i in range(len(BARRIERpos)):
+    box_body = p.createMultiBody(
+        baseMass=1.0,
+        baseCollisionShapeIndex=cylinder_shape,
+        basePosition=[BARRIERpos[i][0], BARRIERpos[i][1], 0.3],
+    )
+
+def moveTo(targetX, targetY):
+  pos, hquat = p.getBasePositionAndOrientation(car)
+  h = p.getEulerFromQuaternion(hquat)
+  x = pos[0]
+  y = pos[1]
+  distance = math.sqrt((targetX - x)**2 + (targetY - y)**2)
+  theta = math.atan2((targetY - y), (targetX - x))
+  while distance > 1:
+    pos, hquat = p.getBasePositionAndOrientation(car)
+    h = p.getEulerFromQuaternion(hquat)
+    x = pos[0]
+    y = pos[1]
+    distance = math.sqrt((targetX - x)**2 + (targetY - y)**2)
+    theta = math.atan2((targetY - y), (targetX - x))
+    maxForce = 20
+    targetVelocity = 10*distance
+
+    # velocity cap
+    if targetVelocity > 20:
+       targetVelocity = 20
+
+    steeringAngle = theta - h[2]
+    if steeringAngle > (math.pi / 2) or steeringAngle < -(math.pi / 2):
+       steeringAngle = h[2] - theta
+    else:
+       steeringAngle = theta - h[2]
+
+    # p.resetDebugVisualizerCamera(
+    #   cameraDistance = 10,
+    #   cameraYaw = -90, 
+    #   cameraPitch = -45,
+    #   cameraTargetPosition = [pos[0] + 5, 0, pos[2]],
+    #   physicsClientId=0
+    # )
+       
+    for wheel in wheels:
+        p.setJointMotorControl2(car,
+                            wheel,
+                            p.VELOCITY_CONTROL,
+                            targetVelocity=targetVelocity,
+                            force=maxForce)
+
+    for steer in steering:
+        p.setJointMotorControl2(car, steer, p.POSITION_CONTROL, targetPosition=steeringAngle)
+
+    steering
+    if (useRealTimeSim == 0):
+        p.stepSimulation()
+    time.sleep(0.01)
+
+PATH.reverse()
+print(PATH)
+for coordinate in PATH:
+   moveTo(coordinate[0], coordinate[1])
+
