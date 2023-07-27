@@ -8,7 +8,7 @@ import math
 import numpy as np
 import time
 
-WIDTH = 750
+WIDTH = 500
 ROWS = 25
 scale = 1
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
@@ -29,7 +29,6 @@ PATH = []
 BARRIERpos = np.array([[5, 12], [6, 11], [8, 13]])
 BARRIERpos[:, 1] *= -1
 BARRIERpos[:, 1] += 24
-print(BARRIERpos)
 
 class Spot:
 	def __init__(self, row, col, width, total_rows):
@@ -147,12 +146,11 @@ def h(p1, p2): #manhattan vs eudclidean distance: heuristic function
 	# return abs(x1 - x2) + abs(y1 - y2)
 	return math.sqrt((x1-x2)**2 + (y1-y2)**2)
 
-
 def reconstruct_path(came_from, current, draw): # draw path IMPORTANT BECAUSE ROBOT NEED TO FOLLOW THIS
 	while current in came_from:
 		current = came_from[current]
 		current.make_path()
-		PATH.append([scale * (current.x / 30), scale * (-(current.y / 30) + 12)])
+		PATH.append([scale * (current.x / 20), scale * (-(current.y / 20) + 12)])
 		draw()
 
 def reset_path(grid, start, end):
@@ -219,14 +217,12 @@ def make_grid(rows, width): #makes grid
 
 	return grid #2 dimensional list
 
-
 def draw_grid(win, rows, width): #draws gridlines
 	gap = width // rows
 	for i in range(rows):
 		pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
 		for j in range(rows):
 			pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
-
 
 def draw(win, grid, rows, width):
 	win.fill(WHITE)
@@ -238,7 +234,6 @@ def draw(win, grid, rows, width):
 	draw_grid(win, rows, width) #draws gridlines
 	pygame.display.update() #update display
 
-
 def get_clicked_pos(pos, rows, width): #gets mouse click position
 	gap = width // rows
 	y, x = pos
@@ -247,9 +242,6 @@ def get_clicked_pos(pos, rows, width): #gets mouse click position
 	col = x // gap
 
 	return row, col
-
-
-
 
 def main(win, width):
 	grid = make_grid(ROWS, width)
@@ -263,64 +255,19 @@ def main(win, width):
 	start.make_start()
 	end = grid[24][-13]
 	end.make_end()
-	
+
 	for coordinate in BARRIERpos:
 		grid[coordinate[0]][coordinate[1]].make_barrier()
-		
-	# for event in pygame.event.get():
-	# 	if event.type == pygame.QUIT:
-	# 		run = False
 
-				# if pygame.mouse.get_pressed()[0]: # left click
-				# 	pos = pygame.mouse.get_pos()
-				# 	row, col = get_clicked_pos(pos, ROWS, width)
-				# 	spot = grid[row][col]
-					
-				# 	if not start and spot != end:
-				# 		start = spot
-				# 		start.make_start()
-
-				# 	elif not end and spot != start:
-				# 		end = spot
-				# 		end.make_end()
-						
-				# 	elif spot != end and spot != start:
-				# 		spot.make_barrier()
-				# 		BARRIERpos.append([scale * (spot.x / 30), scale * ((-(spot.y) / 30) + 12)])
-
-
-				# elif pygame.mouse.get_pressed()[2]: # RIGHT
-				# 	pos = pygame.mouse.get_pos()
-				# 	row, col = get_clicked_pos(pos, ROWS, width)
-				# 	spot = grid[row][col]
-				# 	spot.reset()
-				# 	if spot == start:
-				# 		start = None
-				# 	elif spot == end:
-				# 		end = None
-
-				# if event.type == pygame.KEYDOWN:
-				# 	if event.key == pygame.K_c:
-				# 		start = None
-				# 		end = None
-				# 		grid = make_grid(ROWS, width)
-
-					# if event.key == pygame.K_SPACE and start and end:
 	reset_path(grid, start, end)
 	inflate_obstacles(grid)  # Inflate obstacles before running the algorithm
 	for row in grid:
 		for spot in row:
 			spot.update_neighbors(grid)
 	algorithm(lambda: draw(win, grid, ROWS, width), grid, start, end)
-	# run = False
-
-
-	pygame.quit()
+	# pygame.quit()
 
 main(WIN, WIDTH)
-# print(BARRIERpos)
-# BARRIER = []
-# [BARRIER.append(x) for x in BARRIERpos if x not in BARRIER] # gets rid of repetitve terms
 
 # Simulation
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -343,17 +290,6 @@ wheels = [2, 3]
 for wheel in inactive_wheels:
   p.setJointMotorControl2(car, wheel, p.VELOCITY_CONTROL, targetVelocity=0, force=0)
 steering = [4, 6]
-
-# Obstacles
-cylinder_shape = p.createCollisionShape(p.GEOM_CYLINDER, radius=0.15, height=0.5)
-
-# Generate obstacles
-for i in range(len(BARRIERpos)):
-    box_body = p.createMultiBody(
-        baseMass=1.0,
-        baseCollisionShapeIndex=cylinder_shape,
-        basePosition=[BARRIERpos[i][0], BARRIERpos[i][1], 0.3],
-    )
 
 def moveTo(targetX, targetY):
   pos, hquat = p.getBasePositionAndOrientation(car)
@@ -381,14 +317,6 @@ def moveTo(targetX, targetY):
        steeringAngle = h[2] - theta
     else:
        steeringAngle = theta - h[2]
-
-    # p.resetDebugVisualizerCamera(
-    #   cameraDistance = 10,
-    #   cameraYaw = -90, 
-    #   cameraPitch = -45,
-    #   cameraTargetPosition = [pos[0] + 5, 0, pos[2]],
-    #   physicsClientId=0
-    # )
        
     for wheel in wheels:
         p.setJointMotorControl2(car,
@@ -406,7 +334,6 @@ def moveTo(targetX, targetY):
     time.sleep(0.01)
 
 PATH.reverse()
-print(PATH)
 for coordinate in PATH:
    moveTo(coordinate[0], coordinate[1])
 
