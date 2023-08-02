@@ -2,8 +2,8 @@ import pygame
 import math
 from queue import PriorityQueue
 
-WIDTH = 550
-ROWS = 55
+WIDTH = 500
+ROWS = 50
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption("A* Path Finding Algorithm")
 
@@ -134,7 +134,6 @@ def h(p1, p2): #manhattan vs euclidean distance: heuristic function
 	# return abs(x1 - x2) + abs(y1 - y2)
 	return math.sqrt((x1-x2)**2 + (y1-y2)**2)
 
-
 def reconstruct_path(came_from, current, draw):
 	while current in came_from:
 		current = came_from[current]
@@ -193,7 +192,6 @@ def algorithm(draw, grid, start, end):
 
 	return False
 
-
 def make_grid(rows, width): #makes grid
 	grid = []
 	gap = width // rows
@@ -205,14 +203,12 @@ def make_grid(rows, width): #makes grid
 
 	return grid #2 dimensional list
 
-
 def draw_grid(win, rows, width): #draws gridlines
 	gap = width // rows
 	for i in range(rows):
 		pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
 		for j in range(rows):
 			pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
-
 
 def draw(win, grid, rows, width):
 	win.fill(WHITE)
@@ -224,7 +220,6 @@ def draw(win, grid, rows, width):
 	draw_grid(win, rows, width) #draws gridlines
 	pygame.display.update() #update display
 
-
 def get_clicked_pos(pos, rows, width): #gets mouse click position
 	gap = width // rows
 	y, x = pos
@@ -233,8 +228,6 @@ def get_clicked_pos(pos, rows, width): #gets mouse click position
 	col = x // gap
 
 	return row, col
-
-
 
 def main(win, width):
 	grid = make_grid(ROWS, width)
