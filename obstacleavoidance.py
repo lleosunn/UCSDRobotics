@@ -75,7 +75,7 @@ def spawnObstaclesAroundCar():
 def updatePosition():
     global x, y, z, heading
     pos, hquat = p.getBasePositionAndOrientation(car)
-    heading = p.getEulerFromQuaternion(hquat)
+    heading = p.getEulerFromQuaternion(hquat)[2]
     x = pos[0]
     y = pos[1]
     z = pos[2]
@@ -86,7 +86,7 @@ def moveTo(targetX, targetY):
   distance = math.sqrt((targetX - x)**2 + (targetY - y)**2)
   theta = math.atan2((targetY - y), (targetX - x))
 
-  while distance > 0:
+  while distance > 1:
     updatePosition()
     spawnObstaclesAroundCar()
     distance = math.sqrt((targetX - x)**2 + (targetY - y)**2)
@@ -99,16 +99,16 @@ def moveTo(targetX, targetY):
        targetVelocity = 20
 
     # make sure steering angle doesnt exceed -pi or pi
-    steeringAngle = theta - heading[2]
-    if steeringAngle > (math.pi / 2) or steeringAngle < -(math.pi / 2):
-       steeringAngle = heading[2] - theta
+    steeringAngle = theta - heading
+    if abs(steeringAngle) > (math.pi):
+       steeringAngle = heading - theta
     else:
-       steeringAngle = theta - heading[2]
+       steeringAngle = theta - heading
 
     # depth camera stuff
     view_matrix_car = p.computeViewMatrix(
-       cameraEyePosition = [x + 0.5*math.cos(heading[2]), y + 0.5*math.sin(heading[2]), z + 0.1],
-       cameraTargetPosition = [x + 2*math.cos(heading[2]), y + 2*math.sin(heading[2]), z + 0.05],
+       cameraEyePosition = [x + 0.5*math.cos(heading), y + 0.5*math.sin(heading), z + 0.1],
+       cameraTargetPosition = [x + 2*math.cos(heading), y + 2*math.sin(heading), z + 0.05],
        cameraUpVector = [0, 0, 1]
     )
     projection_matrix_car = p.computeProjectionMatrixFOV(
@@ -130,8 +130,12 @@ def moveTo(targetX, targetY):
     totalmiddle = sum(middle)
 
     difference = abs(totalfirsthalf - totalsecondhalf)
+    print(difference)
 
     if totalmiddle > 4:
+      if difference < 10:
+        steeringAngle = 5
+        time.sleep(1)
       if totalfirsthalf > totalsecondhalf:
           steeringAngle = steeringAngle - 50*difference
           # targetVelocity = targetVelocity * 4
