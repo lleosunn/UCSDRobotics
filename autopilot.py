@@ -97,7 +97,7 @@ steering = [4, 6]
 
 BARRIER = []  # List to hold generated barriers
 BARRIER_IDS = {}  # Dictionary to hold generated barriers along with their IDs
-MAX_OBSTACLES = 30
+MAX_OBSTACLES = 40
 
 # Cylinder shape for the barriers
 cylinder_shape = p.createCollisionShape(
@@ -521,6 +521,8 @@ def moveTo(targetX, targetY):
     while distance > 1:
         updatePosition()
         spawnObstaclesAroundCar()
+        spawnObstaclesAroundCar()
+        spawnObstaclesAroundCar()
         distance = math.sqrt((globalTargetX - x)**2 + (globalTargetY - y)**2)
         theta = math.atan2((globalTargetY - y), (globalTargetX - x))
 
@@ -536,51 +538,47 @@ def moveTo(targetX, targetY):
             steeringAngle = heading - theta
         else:
             steeringAngle = theta - heading
-        # view_matrix_car = p.computeViewMatrix(
-        #     cameraEyePosition=[
-        #         x + 0.5*math.cos(heading), y + 0.5*math.sin(heading), z + 0.1],
-        #     cameraTargetPosition=[
-        #         x + 2*math.cos(heading), y + 2*math.sin(heading), z + 0.05],
-        #     cameraUpVector=[0, 0, 1]
-        # )
-        # projection_matrix_car = p.computeProjectionMatrixFOV(
-        #     fov=60,  # field of view
-        #     aspect=1.0,  # aspect ratio
-        #     nearVal=0.1,  # near clipping plane
-        #     farVal=100.0  # far clipping plane
-        # )
+        view_matrix_car = p.computeViewMatrix(
+            cameraEyePosition=[
+                x + 0.5*math.cos(heading), y + 0.5*math.sin(heading), z + 0.1],
+            cameraTargetPosition=[
+                x + 2*math.cos(heading), y + 2*math.sin(heading), z + 0.05],
+            cameraUpVector=[0, 0, 1]
+        )
+        projection_matrix_car = p.computeProjectionMatrixFOV(
+            fov=80,  # field of view
+            aspect=1.0,  # aspect ratio
+            nearVal=0.1,  # near clipping plane
+            farVal=100.0  # far clipping plane
+        )
 
-        # img_arr = p.getCameraImage(256, 256, viewMatrix=view_matrix_car,
-        #                            projectionMatrix=projection_matrix_car, renderer=p.ER_BULLET_HARDWARE_OPENGL)
-        # depth_buf = np.reshape(img_arr[3], (256, 256))
-        # depth_img = 1 - np.array(depth_buf)
-        # firsthalf = depth_img[0][:128]
-        # totalfirsthalf = sum(firsthalf)
-        # secondhalf = depth_img[0][128:]
-        # totalsecondhalf = sum(secondhalf)
-        # middle = depth_img[0][96:160]
-        # totalmiddle = sum(middle)
+        img_arr = p.getCameraImage(256, 256, viewMatrix=view_matrix_car,
+                                   projectionMatrix=projection_matrix_car, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        depth_buf = np.reshape(img_arr[3], (256, 256))
+        depth_img = 1 - np.array(depth_buf)
+        firsthalf = depth_img[0][:128]
+        totalfirsthalf = sum(firsthalf)
+        secondhalf = depth_img[0][128:]
+        totalsecondhalf = sum(secondhalf)
+        middle = depth_img[0][54:202]
+        totalmiddle = sum(middle)
 
-        # print("First: ", totalfirsthalf)
-        # print("Second: ", totalsecondhalf)
-        # print("Middle: ", totalmiddle)
-        # print("Steering Angle: ", steeringAngle)
+        steer_reset_speed = 0.001
 
-        # difference = abs(totalfirsthalf - totalsecondhalf)
+        if steeringAngle != 0:
+            if steeringAngle > 0:
+                steeringAngle = max(0, steeringAngle - steer_reset_speed)
+            elif steeringAngle < 0:
+                steeringAngle = min(0, steeringAngle + steer_reset_speed)
 
-        # if totalmiddle > 4:
-        #     if totalfirsthalf > totalsecondhalf:
-        #         steeringAngle = steeringAngle - 50*difference
-        #         # targetVelocity = targetVelocity * 4
-        #     else:
-        #         steeringAngle = steeringAngle + 50*difference
-        #         # targetVelocity = targetVelocity * 4
+        if totalmiddle > 0:
+            if totalfirsthalf > totalsecondhalf:
+                steeringAngle = steeringAngle - 1
+                targetVelocity = targetVelocity + 10
+            else:
+                steeringAngle = steeringAngle + 1
+                targetVelocity = targetVelocity + 10
 
-        # elif difference > 2:
-        #     if totalfirsthalf > totalsecondhalf:
-        #         steeringAngle = steeringAngle - 6*(1/difference)
-        #     else:
-        #         steeringAngle = steeringAngle + 6*(1/difference)
 
         for wheel in wheels:
             p.setJointMotorControl2(car,
@@ -604,6 +602,21 @@ def moveTo(targetX, targetY):
         p.stepSimulation()
         time.sleep(0.01)
 
+def straightenOut():
+    while abs(heading) > 0.1:
+        updatePosition()
+        for steer in steering:
+            p.setJointMotorControl2(
+                car, steer, p.POSITION_CONTROL, targetPosition=(0 - heading))
+            
+def stop():
+    for wheel in wheels:
+            p.setJointMotorControl2(car,
+                                    wheel,
+                                    p.VELOCITY_CONTROL,
+                                    targetVelocity=0,
+                                    force=20)
+
 
 # AUTOPILOT
 i = 0
@@ -626,9 +639,5 @@ while (True):
     setReferencePointAsCurrentPosition()
     for index, coordinate in enumerate(PATH):
         moveTo(coordinate[0], coordinate[1])
-    for wheel in wheels:
-        p.setJointMotorControl2(car,
-                        wheel,
-                        p.VELOCITY_CONTROL,
-                        targetVelocity=0,
-                        force=20)
+    straightenOut()
+    stop()

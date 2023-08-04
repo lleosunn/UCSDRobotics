@@ -35,13 +35,13 @@ steering = [4, 6]
 
 BARRIER = [] # List to hold generated barriers
 BARRIER_IDS = {} # Dictionary to hold generated barriers along with their IDs
-MAX_OBSTACLES = 20
+MAX_OBSTACLES = 40
 
 # Cylinder shape for the barriers
 cylinder_shape = p.createCollisionShape(p.GEOM_CYLINDER, radius=0.15, height=0.5)
 
 # Function to check if a new barrier is too close to existing ones
-def too_close(new_barrier, existing_barriers, min_distance=1.25):
+def too_close(new_barrier, existing_barriers, min_distance=1):
     for barrier in existing_barriers:
         dist = math.sqrt((new_barrier[0]-barrier[0])**2 + (new_barrier[1]-barrier[1])**2)
         if dist < min_distance:
@@ -89,14 +89,17 @@ def moveTo(targetX, targetY):
   while distance > 1:
     updatePosition()
     spawnObstaclesAroundCar()
+    spawnObstaclesAroundCar()
+    spawnObstaclesAroundCar()
+
     distance = math.sqrt((targetX - x)**2 + (targetY - y)**2)
     theta = math.atan2((targetY - y), (targetX - x))
     maxForce = 20
-    targetVelocity = 5*distance
+    targetVelocity = 10*distance
 
     # velocity cap
-    if targetVelocity > 20:
-       targetVelocity = 20
+    if targetVelocity > 15:
+       targetVelocity = 15
 
     # make sure steering angle doesnt exceed -pi or pi
     steeringAngle = theta - heading
@@ -112,7 +115,7 @@ def moveTo(targetX, targetY):
        cameraUpVector = [0, 0, 1]
     )
     projection_matrix_car = p.computeProjectionMatrixFOV(
-      fov=60,  # field of view
+      fov=80,  # field of view
       aspect=1.0,  # aspect ratio
       nearVal=0.1,  # near clipping plane
       farVal=100.0  # far clipping plane
@@ -126,28 +129,26 @@ def moveTo(targetX, targetY):
     totalfirsthalf = sum(firsthalf)
     secondhalf = depth_img[0][128:]
     totalsecondhalf = sum(secondhalf)
-    middle = depth_img[0][96:160]
+    middle = depth_img[0][54:202]
     totalmiddle = sum(middle)
 
     difference = abs(totalfirsthalf - totalsecondhalf)
-    print(difference)
 
-    if totalmiddle > 4:
-      if difference < 10:
-        steeringAngle = 5
-        time.sleep(1)
+    steer_reset_speed = 0.001
+
+    if steeringAngle != 0:
+      if steeringAngle > 0:
+          steeringAngle = max(0, steeringAngle - steer_reset_speed)
+      elif steeringAngle < 0:
+          steeringAngle = min(0, steeringAngle + steer_reset_speed)
+
+    if totalmiddle > 0:
       if totalfirsthalf > totalsecondhalf:
-          steeringAngle = steeringAngle - 50*difference
+          steeringAngle = steeringAngle - 1
           # targetVelocity = targetVelocity * 4
       else:
-          steeringAngle = steeringAngle + 50*difference
+          steeringAngle = steeringAngle + 1
           # targetVelocity = targetVelocity * 4
-
-    elif difference > 2:  
-      if totalfirsthalf > totalsecondhalf:
-         steeringAngle = steeringAngle - 6*(1/difference)
-      else:
-         steeringAngle = steeringAngle + 6*(1/difference)
     
     p.resetDebugVisualizerCamera(
       cameraDistance = 10,
