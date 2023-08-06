@@ -104,8 +104,6 @@ cylinder_shape = p.createCollisionShape(
     p.GEOM_CYLINDER, radius=0.15, height=0.5)
 
 # Function to check if a new barrier is too close to existing ones
-
-
 def too_close(new_barrier, existing_barriers, min_distance=1):
     for barrier in existing_barriers:
         dist = math.sqrt((new_barrier[0]-barrier[0])
@@ -113,7 +111,6 @@ def too_close(new_barrier, existing_barriers, min_distance=1):
         if dist < min_distance:
             return True
     return False
-
 
 def spawnObstaclesAroundCar():
     new_barrier_polar = [random.uniform(4, 9), random.uniform(-0.4, 0.4)]
@@ -398,13 +395,11 @@ def reconstruct_path(came_from, current, draw):
                     scale * ((current.x / (WIDTH/ROWS)) - (ROWS//2))])
         draw()
 
-
 def reset_path(grid, start, end):
     for row in grid:
         for spot in row:
             if spot != start and spot != end and not spot.is_barrier() and not spot.is_inflation():
                 spot.reset()
-
 
 def algorithm(draw, grid, start, end):
     count = 0
@@ -453,7 +448,6 @@ def algorithm(draw, grid, start, end):
 
     return False
 
-
 def make_grid(rows, width):  # makes grid
     grid = []
     gap = width // rows
@@ -462,9 +456,7 @@ def make_grid(rows, width):  # makes grid
         for j in range(rows):
             spot = Spot(i, j, gap, rows)
             grid[i].append(spot)
-
     return grid  # 2 dimensional list
-
 
 def draw_grid(win, rows, width):  # draws gridlines
     gap = width // rows
@@ -473,7 +465,6 @@ def draw_grid(win, rows, width):  # draws gridlines
         for j in range(rows):
             pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
 
-
 def draw(win, grid, rows, width):
     win.fill(WHITE)
     for row in grid:
@@ -481,7 +472,6 @@ def draw(win, grid, rows, width):
             spot.draw(win)  # draws each box color
     draw_grid(win, rows, width)  # draws gridlines
     pygame.display.update()  # update display
-
 
 def main(win, width):
     grid = make_grid(ROWS, width)
@@ -495,6 +485,17 @@ def main(win, width):
 
     reset_path(grid, start, end)
     inflate_obstacles(grid)  # Inflate obstacles before running the algorithm
+    
+    array_2d = np.zeros((49, 49))
+    for row in grid:
+        for spot in row:
+            if spot.is_barrierinflation():
+                obstacle_row, obstacle_col = spot.get_pos()
+                array_2d[obstacle_row - 1, obstacle_col - 1] = 1
+    np.set_printoptions(threshold=np.inf)
+    print(array_2d)
+
+    
     start = grid[ROWS//2][0]
     start.make_start()
     end = grid[ROWS//2][ROWS//2]
@@ -509,7 +510,6 @@ def setReferencePointAsCurrentPosition():
     updatePosition()
     global referencePoint
     referencePoint = [x, y]
-
 
 def moveTo(targetX, targetY):
     updatePosition()
